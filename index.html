@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimpleFeed</title>
+<style>
+  :root{
+    --ink:#20281f; --paper:#f3efe4; --paper-soft:#e9e3d3;
+    --moss:#4d5c42; --moss-dark:#38452f; --clay:#a8623f; --line:#cfc6ac;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:var(--serif); background:var(--paper); color:var(--ink); min-height:100vh;}
+  .hidden{display:none !important;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 16px 90px;}
+
+  header.top{position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--line);
+    padding:14px 16px; display:flex; align-items:center; justify-content:space-between;}
+  header.top .brand{font-size:20px; font-weight:700;}
+  header.top .brand span{color:var(--clay);}
+  header.top .who{font-family:var(--mono); font-size:12px; color:var(--moss-dark); cursor:pointer;}
+
+  nav.tabs{display:flex; gap:6px; margin:14px 0; border-bottom:1px solid var(--line);}
+  nav.tabs button{flex:1; background:none; border:none; padding:10px 6px; font-family:var(--mono);
+    font-size:12px; letter-spacing:.5px; text-transform:uppercase; color:#8a8267; cursor:pointer; border-bottom:2px solid transparent;}
+  nav.tabs button.active{color:var(--moss-dark); border-bottom:2px solid var(--clay); font-weight:700;}
+
+  .auth-box{max-width:360px; margin:60px auto; padding:28px; background:var(--paper-soft); border:1px solid var(--line);}
+  .auth-box h1{font-size:26px; margin:0 0 4px; text-align:center;}
+  .auth-box h1 span{color:var(--clay);}
+  .auth-box p.tag{font-family:var(--mono); font-size:12px; text-align:center; color:#6b6650; margin:0 0 22px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-family:var(--mono); font-size:11px; text-transform:uppercase; margin-bottom:4px; color:#5c5843;}
+  .field input, .field textarea{width:100%; padding:9px 10px; border:1px solid var(--line); background:var(--paper); font-family:var(--serif); font-size:15px; color:var(--ink);}
+  .checkbox-line{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; margin-top:6px; color:#5c5843;}
+  .checkbox-line input{width:auto;}
+  button.primary{width:100%; padding:11px; background:var(--moss); color:#f3efe4; border:none; font-family:var(--mono); font-size:13px; letter-spacing:.5px; text-transform:uppercase; cursor:pointer; margin-top:6px;}
+  button.primary:hover{background:var(--moss-dark);}
+  button.link{background:none; border:none; color:var(--clay); font-family:var(--mono); font-size:12px; cursor:pointer; text-decoration:underline; padding:0;}
+  .error{color:#a8402f; font-family:var(--mono); font-size:12px; margin-top:8px; min-height:14px;}
+
+  .composer{background:var(--paper-soft); border:1px solid var(--line); padding:12px; margin-bottom:18px;}
+  .composer textarea{width:100%; border:none; background:transparent; font-family:var(--serif); font-size:15px; resize:none; min-height:54px;}
+  .composer .row{display:flex; justify-content:flex-end;}
+  .composer button{padding:7px 16px; background:var(--clay); color:#fff; border:none; font-family:var(--mono); font-size:12px; text-transform:uppercase; cursor:pointer;}
+
+  .post{border-bottom:1px solid var(--line); padding:16px 0 16px 12px; border-left:3px solid transparent;}
+  .post .meta{font-family:var(--mono); font-size:11px; color:#6b6650; margin-bottom:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .post .meta b{color:var(--moss-dark); font-size:12px; display:flex; align-items:center;}
+  .post .body{font-size:16px; line-height:1.5; white-space:pre-wrap; margin-bottom:8px;}
+  .post .actions{display:flex; gap:16px; font-family:var(--mono); font-size:12px; align-items:center;}
+  .post .actions button{background:none; border:none; cursor:pointer; color:#6b6650; padding:0;}
+  .post .actions button.liked{color:var(--clay); font-weight:700;}
+  .post .actions button.deleteBtn{margin-left:auto; color:#a8402f;}
+  .badge{font-size:11px; padding:1px 6px; border-radius:9px; background:var(--paper-soft); border:1px solid var(--line);}
+  .badge.admin-badge{background:var(--clay); color:#fff; border-color:var(--clay);}
+  .avatar-img{width:20px; height:20px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:4px;}
+  .usernameLink{cursor:pointer;}
+  .followBtn{font-family:var(--mono); font-size:10px; padding:2px 8px; border:1px solid var(--moss); background:none; color:var(--moss-dark); cursor:pointer; border-radius:9px;}
+  .followBtn.following{background:var(--moss); color:#fff;}
+
+  .announcement{border-bottom:1px solid var(--line); padding:16px; margin-bottom:2px; background:var(--paper-soft); border-left:3px solid transparent;}
+  .announcement.admin-announcement{background:#f0e2d6; border-left:3px solid var(--clay);}
+  .announcement .meta{font-family:var(--mono); font-size:11px; color:#6b6650; margin-bottom:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .announcement .meta b{color:var(--moss-dark); display:flex; align-items:center;}
+  .announcement .pin-tag{font-family:var(--mono); font-size:10px; background:var(--clay); color:#fff; padding:1px 6px; border-radius:9px;}
+  .announcement .body{font-size:15px; line-height:1.5; white-space:pre-wrap;}
+  .announcement .actions{margin-top:8px; font-family:var(--mono); font-size:11px;}
+  .announcement .actions button{background:none; border:none; color:#a8402f; cursor:pointer; padding:0;}
+
+  .comments{margin-top:10px; padding-left:12px; border-left:2px solid var(--line);}
+  .comment{font-size:13.5px; margin-bottom:6px;}
+  .comment b{font-family:var(--mono); font-size:11px; margin-right:6px;}
+  .comment-input{display:flex; gap:6px; margin-top:8px;}
+  .comment-input input{flex:1; padding:6px 8px; border:1px solid var(--line); background:var(--paper); font-size:13px;}
+  .comment-input button{background:var(--moss); color:#fff; border:none; padding:6px 10px; font-family:var(--mono); font-size:11px; cursor:pointer;}
+
+  .profile-card{text-align:center; padding:24px 0;}
+  .profile-card .name{font-size:24px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .profile-card .bio{font-family:var(--mono); font-size:13px; color:#6b6650; margin:6px 0 18px;}
+  .profile-card textarea{width:100%; margin-bottom:10px;}
+  .avatar-preview{width:64px; height:64px; border-radius:50%; object-fit:cover; border:3px solid var(--line); margin:0 auto 14px; display:block;}
+  .custom-row{display:flex; align-items:flex-start; justify-content:center; gap:16px; margin-bottom:16px; flex-wrap:wrap;}
+  .custom-row label{font-family:var(--mono); font-size:11px; text-transform:uppercase; color:#5c5843; display:block; margin-bottom:4px;}
+  .custom-row input[type="color"]{width:44px; height:32px; border:1px solid var(--line); background:none; cursor:pointer;}
+  select.avatarPick{padding:6px; border:1px solid var(--line); background:var(--paper); font-size:16px;}
+  .badges-owned{display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-bottom:16px;}
+  .photo-upload-block{margin-bottom:16px; text-align:left; max-width:280px; margin-left:auto; margin-right:auto;}
+  .photo-upload-block label{font-family:var(--mono); font-size:11px; text-transform:uppercase; color:#5c5843; display:block; margin-bottom:6px;}
+
+  .dm-list-item{display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer;}
+  .dm-list-item b{font-size:15px;}
+  .dm-list-item span{font-family:var(--mono); font-size:11px; color:#8a8267;}
+  .dm-thread{display:flex; flex-direction:column; gap:8px; padding:12px 0 80px;}
+  .msg{max-width:75%; padding:8px 11px; border-radius:2px; font-size:14px; line-height:1.4;}
+  .msg.me{align-self:flex-end; background:var(--moss); color:#f3efe4;}
+  .msg.them{align-self:flex-start; background:var(--paper-soft); border:1px solid var(--line);}
+  .dm-input-bar{position:fixed; bottom:0; left:0; right:0; background:var(--paper); border-top:1px solid var(--line); padding:10px; display:flex; gap:8px; max-width:560px; margin:0 auto;}
+  .dm-input-bar input{flex:1; padding:9px; border:1px solid var(--line); background:var(--paper-soft);}
+  .dm-input-bar button{background:var(--clay); color:#fff; border:none; padding:0 16px; font-family:var(--mono); font-size:12px; cursor:pointer;}
+  .back{font-family:var(--mono); font-size:12px; color:var(--moss-dark); cursor:pointer; margin-bottom:10px; display:inline-block;}
+  .empty{font-family:var(--mono); font-size:12px; color:#8a8267; text-align:center; padding:40px 0;}
+  .find-bar{display:flex; gap:8px; margin-bottom:14px;}
+  .find-bar input{flex:1; padding:8px; border:1px solid var(--line); background:var(--paper-soft);}
+  .find-bar button{background:var(--moss); color:#fff; border:none; padding:0 14px; font-family:var(--mono); font-size:12px; cursor:pointer;}
+
+  .banned-box{max-width:360px; margin:80px auto; text-align:center; font-family:var(--mono); font-size:13px; color:#a8402f;}
+
+  .admin-user{border-bottom:1px solid var(--line); padding:12px 0;}
+  .admin-user .row1{display:flex; justify-content:space-between; align-items:center;}
+  .admin-user b{font-size:14px; display:flex; align-items:center;}
+  .admin-user .tag-banned{color:#a8402f; font-family:var(--mono); font-size:11px;}
+  .admin-controls{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;}
+  .admin-controls button, .admin-controls select{font-family:var(--mono); font-size:11px; padding:5px 8px; border:1px solid var(--line); background:var(--paper-soft); cursor:pointer;}
+  .admin-controls button.banBtn{color:#a8402f;}
+  .admin-controls button.unbanBtn{color:var(--moss-dark);}
+</style>
+</head>
+<body>
+
+<div id="authScreen" class="auth-box">
+  <h1>Simple<span>Feed</span></h1>
+  <p class="tag" id="authTag">// sign in to your board</p>
+  <div class="field"><label>Username</label><input id="authUsername" placeholder="only for sign up"></div>
+  <div class="field"><label>Email</label><input id="authEmail" type="email"></div>
+  <div class="field">
+    <label>Password</label>
+    <input id="authPassword" type="password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="checkbox-line"><input type="checkbox" id="showPasswordToggle"> Show password</div>
+  </div>
+  <button class="primary" id="authSubmit">Sign in</button>
+  <button class="link" id="authToggle" style="display:block;margin:14px auto 0;">Need an account? Sign up</button>
+  <div class="error" id="authError"></div>
+</div>
+
+<div id="bannedScreen" class="banned-box hidden">
+  <h1>Simple<span style="color:var(--clay);">Feed</span></h1>
+  <p>Your account has been banned by an admin.</p>
+  <button class="link" id="bannedSignOut">Sign out</button>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="brand">Simple<span>Feed</span></div>
+    <div class="who" id="whoAmI" title="Sign out"></div>
+  </header>
+  <div class="wrap">
+    <nav class="tabs">
+      <button data-tab="feed" class="active">Feed</button>
+      <button data-tab="announcements">📢</button>
+      <button data-tab="dms">DMs</button>
+      <button data-tab="profile">Profile</button>
+      <button data-tab="admin" id="adminTabBtn" class="hidden">Admin</button>
+    </nav>
+
+    <div class="find-bar" style="margin-top:14px;">
+      <input id="userSearchInput" placeholder="🔍 Search username...">
+      <button id="userSearchBtn">Search</button>
+    </div>
+    <div id="userSearchResults"></div>
+
+    <section id="tab-feed">
+      <div class="composer">
+        <textarea id="postText" placeholder="What's going on?"></textarea>
+        <div class="row"><button id="postBtn">Post</button></div>
+      </div>
+      <div id="feedList"></div>
+    </section>
+
+    <section id="tab-announcements" class="hidden">
+      <div class="composer">
+        <textarea id="annText" placeholder="Post an announcement to your followers..."></textarea>
+        <div class="checkbox-line hidden" id="annAdminRow">
+          <input type="checkbox" id="annAdminCheck"> Broadcast to everyone (admin announcement)
+        </div>
+        <div class="row"><button id="annBtn">Announce</button></div>
+      </div>
+      <div id="announcementsList"></div>
+    </section>
+
+    <section id="tab-dms" class="hidden">
+      <div class="find-bar">
+        <input id="dmFindInput" placeholder="username to message">
+        <button id="dmFindBtn">Start</button>
+      </div>
+      <button class="link" id="newGroupToggle" style="display:block;margin-bottom:14px;">+ New group chat</button>
+      <div id="newGroupForm" class="hidden" style="background:var(--paper-soft); border:1px solid var(--line); padding:12px; margin-bottom:16px;">
+        <div class="field"><label>Group name</label><input id="groupNameInput" placeholder="e.g. Movie Night"></div>
+        <div class="field"><label>Usernames (comma separated)</label><input id="groupUsernamesInput" placeholder="alice, bob, carol"></div>
+        <button class="primary" id="createGroupBtn" style="width:auto;padding:9px 16px;">Create group</button>
+      </div>
+      <div id="dmListView"></div>
+      <div id="dmThreadView" class="hidden">
+        <span class="back" id="dmBack">&larr; back</span>
+        <div id="dmThreadHeader" style="font-family:var(--mono);font-size:12px;color:#6b6650;margin-bottom:4px;"></div>
+        <div class="dm-thread" id="dmThread"></div>
+      </div>
+    </section>
+
+    <section id="tab-profile" class="hidden">
+      <div class="profile-card">
+        <img id="avatarPhotoPreview" class="avatar-preview hidden">
+        <div class="name" id="profName"></div>
+        <div class="badges-owned" id="profBadges"></div>
+        <div class="bio" id="profBioDisplay"></div>
+
+        <div class="custom-row">
+          <div>
+            <label>Emoji avatar</label>
+            <select class="avatarPick" id="profAvatar">
+              <option value="🙂">🙂</option><option value="🐱">🐱</option><option value="🐸">🐸</option>
+              <option value="🦊">🦊</option><option value="🐼">🐼</option><option value="🌵">🌵</option>
+              <option value="🌙">🌙</option><option value="⚡">⚡</option><option value="🐢">🐢</option>
+              <option value="🦉">🦉</option><option value="🐨">🐨</option><option value="🦁">🦁</option>
+              <option value="🐙">🐙</option><option value="🐝">🐝</option><option value="🌸">🌸</option>
+              <option value="🍄">🍄</option><option value="🔥">🔥</option><option value="💧">💧</option>
+              <option value="⭐">⭐</option><option value="👽">👽</option><option value="🤖">🤖</option>
+              <option value="👻">👻</option><option value="🎃">🎃</option><option value="🍉">🍉</option>
+            </select>
+          </div>
+          <div>
+            <label>Accent color</label>
+            <input type="color" id="profColor" value="#38452f">
+          </div>
+        </div>
+
+        <div class="photo-upload-block">
+          <label>Or upload a small profile photo</label>
+          <input type="file" id="avatarPhotoInput" accept="image/*">
+          <div style="margin-top:6px;"><button class="link" id="clearAvatarPhoto">Remove photo, use emoji instead</button></div>
+        </div>
+
+        <textarea id="profBioEdit" rows="3" placeholder="Write a short bio..."></textarea>
+        <button class="primary" id="profSave" style="width:auto;padding:9px 20px;">Save profile</button>
+
+        <div style="margin-top:28px; padding-top:18px; border-top:1px solid var(--line);">
+          <button class="link" id="deleteAccountBtn" style="color:#a8402f;">Delete my account</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-admin" class="hidden">
+      <p style="font-family:var(--mono); font-size:12px; color:#6b6650;">// signed in as admin — ban users, grant badges, or delete posts/comments from the feed</p>
+      <div id="adminUserList"></div>
+    </section>
+
+    <section id="tab-viewprofile" class="hidden">
+      <span class="back" id="viewProfileBack">&larr; back</span>
+      <div class="profile-card">
+        <img id="vpAvatarPhoto" class="avatar-preview hidden">
+        <div class="name" id="vpName"></div>
+        <div class="badges-owned" id="vpBadges"></div>
+        <div class="bio" id="vpBio"></div>
+        <button class="followBtn" id="vpFollowBtn" style="margin-bottom:20px;"></button>
+      </div>
+      <div id="vpPostsList"></div>
+    </section>
+  </div>
+</div>
+
+<div id="dmInputBar" class="dm-input-bar hidden">
+  <input id="dmMsgInput" placeholder="Message...">
+  <button id="dmSendBtn">Send</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* On-screen error catcher so problems are visible without dev tools. */
+window.onerror = function (msg, url, line) {
+  alert('JS ERROR: ' + msg + ' (line ' + line + ')');
+};
+window.addEventListener('unhandledrejection', function (e) {
+  var reason = e.reason;
+  alert('PROMISE ERROR: ' + (reason && reason.message ? reason.message : reason));
+});
+
+/* ====================== FIREBASE CONFIG ====================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCxe0iyuT1WGwn163D8iO0q5PZ_95KWhBI",
+  authDomain: "simplefeed-b3f7f.firebaseapp.com",
+  projectId: "simplefeed-b3f7f",
+  storageBucket: "simplefeed-b3f7f.firebasestorage.app",
+  messagingSenderId: "757841940054",
+  appId: "1:757841940054:web:1dcf48ee203803c96fb5f7"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+/* ================================================================ */
+
+let currentUser = null;
+let currentProfile = null;
+let isSignUp = false;
+let pendingAvatarPhoto = undefined; // undefined = no change, null = remove, string = new photo
+let feedUnsub = null;
+let dmListUnsub = null;
+let dmThreadUnsub = null;
+let adminUnsub = null;
+let activeChatId = null;
+let viewProfileUnsub = null;
+
+const BADGE_OPTIONS = ['🌱 Member', '⭐ OG', '🔥 Contributor', '💎 Supporter'];
+const $ = (id) => document.getElementById(id);
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function avatarMarkup(p) {
+  if (p && p.avatarPhoto) {
+    return '<img class="avatar-img" src="' + p.avatarPhoto + '">';
+  }
+  return escapeHtml((p && p.avatar) || '🙂');
+}
+
+async function toggleFollow(uid, btn) {
+  const nowFollowing = (currentProfile.following || []).includes(uid);
+  try {
+    await db.collection('users').doc(currentUser.uid).update({
+      following: nowFollowing
+        ? firebase.firestore.FieldValue.arrayRemove(uid)
+        : firebase.firestore.FieldValue.arrayUnion(uid)
+    });
+    if (nowFollowing) {
+      currentProfile.following = (currentProfile.following || []).filter(u => u !== uid);
+    } else {
+      currentProfile.following = (currentProfile.following || []).concat(uid);
+    }
+    if (btn) {
+      btn.textContent = nowFollowing ? 'Follow' : 'Following';
+      btn.classList.toggle('following', !nowFollowing);
+    }
+  } catch (e) { alert('Could not update follow: ' + e.message); }
+}
+
+function renderBadges(container, badges) {
+  container.innerHTML = (badges || []).map(b =>
+    '<span class="badge">' + escapeHtml(b) + '</span>'
+  ).join('');
+}
+
+function renderRevocableBadges(container, badges, uid) {
+  container.innerHTML = '';
+  if (!badges || !badges.length) {
+    container.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:#8a8267;">no badges</span>';
+    return;
+  }
+  badges.forEach(b => {
+    const chip = document.createElement('span');
+    chip.className = 'badge';
+    chip.style.cursor = 'pointer';
+    chip.title = 'Click to revoke';
+    chip.textContent = b + ' ✕';
+    chip.onclick = async () => {
+      if (!confirm('Revoke "' + b + '"?')) return;
+      try {
+        await db.collection('users').doc(uid).update({
+          badges: firebase.firestore.FieldValue.arrayRemove(b)
+        });
+      } catch (e) { alert('Could not revoke badge: ' + e.message); }
+    };
+    container.appendChild(chip);
+  });
+}
+
+/* ================= AUTH ================= */
+$('showPasswordToggle').onchange = (e) => {
+  $('authPassword').type = e.target.checked ? 'text' : 'password';
+};
+
+$('authToggle').onclick = () => {
+  isSignUp = !isSignUp;
+  $('authSubmit').textContent = isSignUp ? 'Sign up' : 'Sign in';
+  $('authToggle').textContent = isSignUp ? 'Have an account? Sign in' : 'Need an account? Sign up';
+  $('authTag').textContent = isSignUp ? '// create your board account' : '// sign in to your board';
+  $('authError').textContent = '';
+};
+
+$('authSubmit').onclick = async () => {
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+  const username = $('authUsername').value.trim();
+  $('authError').textContent = '';
+
+  try {
+    if (isSignUp) {
+      if (!username) { $('authError').textContent = 'Pick a username.'; return; }
+      if (!email) { $('authError').textContent = 'Enter an email.'; return; }
+      if (password.length < 6) { $('authError').textContent = 'Password needs 6+ characters.'; return; }
+
+      const taken = await db.collection('users').where('usernameLower', '==', username.toLowerCase()).get();
+      if (!taken.empty) { $('authError').textContent = 'Username already taken.'; return; }
+
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      await db.collection('users').doc(cred.user.uid).set({
+        username: username,
+        usernameLower: username.toLowerCase(),
+        bio: '',
+        avatar: '🙂',
+        accentColor: '#38452f',
+        badges: [],
+        isAdmin: false,
+        banned: false,
+        following: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      if (!email) { $('authError').textContent = 'Enter your email.'; return; }
+      if (!password) { $('authError').textContent = 'Enter your password.'; return; }
+      await auth.signInWithEmailAndPassword(email, password);
+    }
+  } catch (e) {
+    $('authError').textContent = e.message;
+  }
+};
+
+$('whoAmI').onclick = () => auth.signOut();
+$('bannedSignOut').onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(async (user) => {
+  try {
+    if (user) {
+      const doc = await db.collection('users').doc(user.uid).get();
+      const profile = doc.exists ? doc.data() : null;
+
+      if (!profile) {
+        // Auth account exists but profile doc is missing (shouldn't normally happen) - sign out safely.
+        await auth.signOut();
+        return;
+      }
+
+      if (profile.banned) {
+        $('authScreen').classList.add('hidden');
+        $('app').classList.add('hidden');
+        $('bannedScreen').classList.remove('hidden');
+        return;
+      }
+      $('bannedScreen').classList.add('hidden');
+
+      currentUser = user;
+      currentProfile = profile;
+
+      $('whoAmI').innerHTML = avatarMarkup(profile) + ' @' + escapeHtml(currentProfile.username);
+      $('authScreen').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      $('profName').innerHTML = avatarMarkup(profile) + ' @' + escapeHtml(currentProfile.username);
+      $('profBioDisplay').textContent = currentProfile.bio || 'No bio yet.';
+      $('profBioEdit').value = currentProfile.bio || '';
+      $('profAvatar').value = currentProfile.avatar || '🙂';
+      $('profColor').value = currentProfile.accentColor || '#38452f';
+      $('avatarPhotoPreview').style.borderColor = currentProfile.accentColor || '#38452f';
+      if (currentProfile.avatarPhoto) {
+        $('avatarPhotoPreview').src = currentProfile.avatarPhoto;
+        $('avatarPhotoPreview').classList.remove('hidden');
+      } else {
+        $('avatarPhotoPreview').classList.add('hidden');
+      }
+      renderBadges($('profBadges'), currentProfile.badges || []);
+
+      if (currentProfile.isAdmin) {
+        $('adminTabBtn').classList.remove('hidden');
+        startAdminPanel();
+      } else {
+        $('adminTabBtn').classList.add('hidden');
+      }
+
+      startFeed();
+      startAnnouncements();
+      startDmList();
+    } else {
+      currentUser = null;
+      currentProfile = null;
+      if (feedUnsub) { feedUnsub(); feedUnsub = null; }
+      if (announcementsUnsub) { announcementsUnsub(); announcementsUnsub = null; }
+      if (dmListUnsub) { dmListUnsub(); dmListUnsub = null; }
+      if (dmThreadUnsub) { dmThreadUnsub(); dmThreadUnsub = null; }
+      if (adminUnsub) { adminUnsub(); adminUnsub = null; }
+      if (viewProfileUnsub) { viewProfileUnsub(); viewProfileUnsub = null; }
+      $('app').classList.add('hidden');
+      $('bannedScreen').classList.add('hidden');
+      $('dmInputBar').classList.add('hidden');
+      $('adminTabBtn').classList.add('hidden');
+      $('authScreen').classList.remove('hidden');
+    }
+  } catch (e) {
+    alert('Load error: ' + e.message);
+  }
+});
+
+/* ================= TABS ================= */
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['feed', 'announcements', 'dms', 'profile', 'admin', 'viewprofile'].forEach(t => $('tab-' + t).classList.add('hidden'));
+    $('tab-' + btn.dataset.tab).classList.remove('hidden');
+    $('dmInputBar').classList.add('hidden');
+    if (btn.dataset.tab !== 'dms') {
+      $('dmThreadView').classList.add('hidden');
+      $('dmListView').classList.remove('hidden');
+    }
+  };
+});
+
+/* ================= FEED ================= */
+$('postBtn').onclick = async () => {
+  const text = $('postText').value.trim();
+  if (!text) return;
+  try {
+    await db.collection('posts').add({
+      text: text,
+      uid: currentUser.uid,
+      username: currentProfile.username,
+      avatar: currentProfile.avatar || '🙂',
+      avatarPhoto: currentProfile.avatarPhoto || null,
+      accentColor: currentProfile.accentColor || '#38452f',
+      badges: currentProfile.badges || [],
+      likes: [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    $('postText').value = '';
+  } catch (e) {
+    alert('Could not post: ' + e.message);
+  }
+};
+
+function startFeed() {
+  if (feedUnsub) return;
+  feedUnsub = db.collection('posts').orderBy('createdAt', 'desc').limit(50)
+    .onSnapshot(snap => {
+      const list = $('feedList');
+      list.innerHTML = '';
+      if (snap.empty) { list.innerHTML = '<div class="empty">No posts yet. Be the first.</div>'; return; }
+      snap.forEach(doc => list.appendChild(renderPost(doc.id, doc.data())));
+    }, err => alert('Feed error: ' + err.message));
+}
+
+function renderPost(id, post) {
+  const el = document.createElement('div');
+  el.className = 'post';
+  const liked = (post.likes || []).includes(currentUser.uid);
+  const when = post.createdAt ? post.createdAt.toDate().toLocaleString() : 'just now';
+  const canDelete = post.uid === currentUser.uid || currentProfile.isAdmin;
+  const nameColor = post.accentColor || '#38452f';
+  el.style.borderLeftColor = nameColor;
+  const isOwnPost = post.uid === currentUser.uid;
+  const isFollowing = (currentProfile.following || []).includes(post.uid);
+
+  el.innerHTML =
+    '<div class="meta">' +
+      '<b style="color:' + escapeHtml(nameColor) + '" class="usernameLink">' + avatarMarkup(post) + '@' + escapeHtml(post.username) + '</b>' +
+      '<span class="badgeWrap"></span>' +
+      (isOwnPost ? '' : '<button class="followBtn ' + (isFollowing ? 'following' : '') + '">' + (isFollowing ? 'Following' : 'Follow') + '</button>') +
+      '<span>' + when + (post.edited ? ' · edited' : '') + '</span>' +
+    '</div>' +
+    '<div class="body">' + escapeHtml(post.text) + '</div>' +
+    '<div class="actions">' +
+      '<button class="likeBtn ' + (liked ? 'liked' : '') + '">♥ ' + ((post.likes || []).length) + '</button>' +
+      '<button class="commentToggle">💬 comments</button>' +
+      (canDelete ? '<button class="editBtn">edit</button>' : '') +
+      (canDelete ? '<button class="deleteBtn">delete</button>' : '') +
+    '</div>' +
+    '<div class="comments hidden" data-id="' + id + '">' +
+      '<div class="commentList"></div>' +
+      '<div class="comment-input"><input placeholder="Write a comment..."><button>Send</button></div>' +
+    '</div>';
+
+  if (post.badges && post.badges.length) {
+    renderBadges(el.querySelector('.badgeWrap'), post.badges);
+  }
+
+  el.querySelector('.usernameLink').onclick = () => openUserProfile(post.uid, post.username);
+
+  const followBtn = el.querySelector('.followBtn');
+  if (followBtn) {
+    followBtn.onclick = () => toggleFollow(post.uid, followBtn);
+  }
+
+  el.querySelector('.likeBtn').onclick = async () => {
+    try {
+      await db.collection('posts').doc(id).update({
+        likes: liked
+          ? firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+          : firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+      });
+    } catch (e) { alert('Could not update like: ' + e.message); }
+  };
+
+  const editBtn = el.querySelector('.editBtn');
+  if (editBtn) {
+    editBtn.onclick = async () => {
+      const newText = prompt('Edit post:', post.text);
+      if (newText === null) return;
+      const trimmed = newText.trim();
+      if (!trimmed) { alert('Post text cannot be empty.'); return; }
+      try {
+        await db.collection('posts').doc(id).update({ text: trimmed, edited: true });
+      } catch (e) { alert('Could not edit post: ' + e.message); }
+    };
+  }
+
+  const delBtn = el.querySelector('.deleteBtn');
+  if (delBtn) {
+    delBtn.onclick = async () => {
+      if (!confirm('Delete this post?')) return;
+      try { await db.collection('posts').doc(id).delete(); }
+      catch (e) { alert('Could not delete: ' + e.message); }
+    };
+  }
+
+  const commentsBox = el.querySelector('.comments');
+  let commentsUnsub = null;
+  el.querySelector('.commentToggle').onclick = () => {
+    commentsBox.classList.toggle('hidden');
+    if (!commentsBox.classList.contains('hidden') && !commentsUnsub) {
+      commentsUnsub = db.collection('posts').doc(id).collection('comments')
+        .orderBy('createdAt', 'asc').onSnapshot(snap => {
+          const cl = commentsBox.querySelector('.commentList');
+          cl.innerHTML = '';
+          snap.forEach(c => {
+            const d = c.data();
+            const canDeleteComment = d.uid === currentUser.uid || currentProfile.isAdmin;
+            const line = document.createElement('div');
+            line.className = 'comment';
+            line.innerHTML =
+              '<b style="color:' + escapeHtml(d.accentColor || '#38452f') + '">@' + escapeHtml(d.username) + '</b>' +
+              escapeHtml(d.text) +
+              (canDeleteComment ? ' <button class="deleteBtn" style="margin-left:6px;">✕</button>' : '');
+            if (canDeleteComment) {
+              line.querySelector('.deleteBtn').onclick = async () => {
+                if (!confirm('Delete this comment?')) return;
+                try { await db.collection('posts').doc(id).collection('comments').doc(c.id).delete(); }
+                catch (e) { alert('Could not delete comment: ' + e.message); }
+              };
+            }
+            cl.appendChild(line);
+          });
+        }, err => alert('Comments error: ' + err.message));
+    }
+  };
+
+  const input = el.querySelector('.comment-input input');
+  el.querySelector('.comment-input button').onclick = async () => {
+    const text = input.value.trim();
+    if (!text) return;
+    try {
+      await db.collection('posts').doc(id).collection('comments').add({
+        text: text,
+        uid: currentUser.uid,
+        username: currentProfile.username,
+        accentColor: currentProfile.accentColor || '#38452f',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      input.value = '';
+    } catch (e) { alert('Could not comment: ' + e.message); }
+  };
+
+  return el;
+}
+
+/* ================= ANNOUNCEMENTS ================= */
+let announcementsUnsub = null;
+
+$('annBtn').onclick = async () => {
+  const text = $('annText').value.trim();
+  if (!text) return;
+  const wantsAdminBroadcast = currentProfile.isAdmin && $('annAdminCheck').checked;
+  try {
+    await db.collection('announcements').add({
+      text: text,
+      uid: currentUser.uid,
+      username: currentProfile.username,
+      avatar: currentProfile.avatar || '🙂',
+      avatarPhoto: currentProfile.avatarPhoto || null,
+      accentColor: currentProfile.accentColor || '#38452f',
+      isAdminAnnouncement: wantsAdminBroadcast,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    $('annText').value = '';
+    $('annAdminCheck').checked = false;
+  } catch (e) { alert('Could not post announcement: ' + e.message); }
+};
+
+function startAnnouncements() {
+  $('annAdminRow').classList.toggle('hidden', !currentProfile.isAdmin);
+  if (announcementsUnsub) return;
+  announcementsUnsub = db.collection('announcements').orderBy('createdAt', 'desc').limit(50)
+    .onSnapshot(snap => {
+      const list = $('announcementsList');
+      list.innerHTML = '';
+      const visible = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        const isFollowed = (currentProfile.following || []).includes(d.uid);
+        if (d.isAdminAnnouncement || isFollowed || d.uid === currentUser.uid) {
+          visible.push([doc.id, d]);
+        }
+      });
+      if (visible.length === 0) {
+        list.innerHTML = '<div class="empty">No announcements yet. Follow people from the Feed to see theirs here.</div>';
+        return;
+      }
+      visible.forEach(([id, d]) => list.appendChild(renderAnnouncement(id, d)));
+    }, err => alert('Announcements error: ' + err.message));
+}
+
+function renderAnnouncement(id, ann) {
+  const el = document.createElement('div');
+  el.className = 'announcement' + (ann.isAdminAnnouncement ? ' admin-announcement' : '');
+  if (!ann.isAdminAnnouncement) {
+    el.style.borderLeftColor = ann.accentColor || '#38452f';
+  }
+  const when = ann.createdAt ? ann.createdAt.toDate().toLocaleString() : 'just now';
+  const canDelete = ann.uid === currentUser.uid || currentProfile.isAdmin;
+
+  el.innerHTML =
+    '<div class="meta">' +
+      '<b style="color:' + escapeHtml(ann.accentColor || '#38452f') + '" class="usernameLink">' + avatarMarkup(ann) + '@' + escapeHtml(ann.username) + '</b>' +
+      (ann.isAdminAnnouncement ? '<span class="pin-tag">📢 Everyone</span>' : '') +
+      '<span>' + when + '</span>' +
+    '</div>' +
+    '<div class="body">' + escapeHtml(ann.text) + '</div>' +
+    (canDelete ? '<div class="actions"><button class="deleteBtn">delete</button></div>' : '');
+
+  el.querySelector('.usernameLink').onclick = () => openUserProfile(ann.uid, ann.username);
+
+  const delBtn = el.querySelector('.deleteBtn');
+  if (delBtn) {
+    delBtn.onclick = async () => {
+      if (!confirm('Delete this announcement?')) return;
+      try { await db.collection('announcements').doc(id).delete(); }
+      catch (e) { alert('Could not delete: ' + e.message); }
+    };
+  }
+  return el;
+}
+
+/* ================= PROFILE ================= */
+$('avatarPhotoInput').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 96;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const minSide = Math.min(img.width, img.height);
+      const sx = (img.width - minSide) / 2;
+      const sy = (img.height - minSide) / 2;
+      ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+      pendingAvatarPhoto = canvas.toDataURL('image/jpeg', 0.6);
+      $('avatarPhotoPreview').src = pendingAvatarPhoto;
+      $('avatarPhotoPreview').classList.remove('hidden');
+    };
+    img.onerror = () => alert('Could not read that image file.');
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+$('clearAvatarPhoto').onclick = () => {
+  pendingAvatarPhoto = null;
+  $('avatarPhotoInput').value = '';
+  $('avatarPhotoPreview').classList.add('hidden');
+};
+
+$('profSave').onclick = async () => {
+  const bio = $('profBioEdit').value.trim();
+  const avatar = $('profAvatar').value;
+  const accentColor = $('profColor').value;
+
+  const updates = { bio: bio, avatar: avatar, accentColor: accentColor };
+  if (pendingAvatarPhoto === null) {
+    updates.avatarPhoto = firebase.firestore.FieldValue.delete();
+  } else if (typeof pendingAvatarPhoto === 'string') {
+    updates.avatarPhoto = pendingAvatarPhoto;
+  }
+
+  try {
+    await db.collection('users').doc(currentUser.uid).update(updates);
+    currentProfile.bio = bio;
+    currentProfile.avatar = avatar;
+    currentProfile.accentColor = accentColor;
+    if (pendingAvatarPhoto === null) { delete currentProfile.avatarPhoto; $('avatarPhotoPreview').classList.add('hidden'); }
+    else if (typeof pendingAvatarPhoto === 'string') { currentProfile.avatarPhoto = pendingAvatarPhoto; }
+    pendingAvatarPhoto = undefined;
+
+    $('profBioDisplay').textContent = bio || 'No bio yet.';
+    $('profName').innerHTML = avatarMarkup(currentProfile) + ' @' + escapeHtml(currentProfile.username);
+    $('whoAmI').innerHTML = avatarMarkup(currentProfile) + ' @' + escapeHtml(currentProfile.username);
+    $('avatarPhotoPreview').style.borderColor = accentColor;
+  } catch (e) {
+    alert('Could not save profile: ' + e.message);
+  }
+};
+
+$('deleteAccountBtn').onclick = async () => {
+  if (!confirm('Delete your account permanently? This cannot be undone.')) return;
+  const password = prompt('For security, re-enter your password to confirm:');
+  if (!password) return;
+
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+    await currentUser.reauthenticateWithCredential(cred);
+
+    const myPosts = await db.collection('posts').where('uid', '==', currentUser.uid).get();
+    await Promise.all(myPosts.docs.map(d => d.ref.delete()));
+
+    await db.collection('users').doc(currentUser.uid).delete();
+    await currentUser.delete();
+    alert('Your account has been deleted.');
+  } catch (e) {
+    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      alert('Incorrect password. Account not deleted.');
+    } else {
+      alert('Could not delete account: ' + e.message);
+    }
+  }
+};
+
+/* ================= ADMIN ================= */
+function startAdminPanel() {
+  if (adminUnsub) return;
+  adminUnsub = db.collection('users').orderBy('username')
+    .onSnapshot(snap => {
+      const list = $('adminUserList');
+      list.innerHTML = '';
+      snap.forEach(doc => {
+        if (doc.id === currentUser.uid) return;
+        const u = doc.data();
+        const row = document.createElement('div');
+        row.className = 'admin-user';
+        row.innerHTML =
+          '<div class="row1">' +
+            '<b>' + avatarMarkup(u) + '@' + escapeHtml(u.username) + '</b>' +
+            (u.banned ? '<span class="tag-banned">BANNED</span>' : '') +
+          '</div>' +
+          '<div class="badgeWrap"></div>' +
+          '<div class="admin-controls">' +
+            '<button class="' + (u.banned ? 'unbanBtn' : 'banBtn') + '">' + (u.banned ? 'Unban' : 'Ban') + '</button>' +
+            '<select class="badgeSelect"><option value="">grant badge...</option>' +
+              BADGE_OPTIONS.map(b => '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>').join('') +
+            '</select>' +
+          '</div>';
+
+        renderRevocableBadges(row.querySelector('.badgeWrap'), u.badges || [], doc.id);
+
+        row.querySelector('.banBtn, .unbanBtn')?.addEventListener('click', async () => {
+          try { await db.collection('users').doc(doc.id).update({ banned: !u.banned }); }
+          catch (e) { alert('Could not update ban status: ' + e.message); }
+        });
+
+        row.querySelector('.badgeSelect').onchange = async (e) => {
+          const badge = e.target.value;
+          if (!badge) return;
+          const badges = u.badges || [];
+          if (!badges.includes(badge)) {
+            try {
+              await db.collection('users').doc(doc.id).update({
+                badges: firebase.firestore.FieldValue.arrayUnion(badge)
+              });
+            } catch (err) { alert('Could not grant badge: ' + err.message); }
+          }
+          e.target.value = '';
+        };
+
+        list.appendChild(row);
+      });
+    }, err => alert('Admin panel error: ' + err.message));
+}
+
+/* ================= VIEW PROFILE (see someone's posts) ================= */
+async function openUserProfile(uid, username) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  ['feed', 'announcements', 'dms', 'profile', 'admin', 'viewprofile'].forEach(t => $('tab-' + t).classList.add('hidden'));
+  $('tab-viewprofile').classList.remove('hidden');
+  $('dmInputBar').classList.add('hidden');
+
+  try {
+    const doc = await db.collection('users').doc(uid).get();
+    if (!doc.exists) { alert('User not found.'); return; }
+    const u = doc.data();
+
+    $('vpName').innerHTML = avatarMarkup(u) + ' @' + escapeHtml(u.username);
+    $('vpBio').textContent = u.bio || 'No bio yet.';
+    renderBadges($('vpBadges'), u.badges || []);
+    $('vpAvatarPhoto').style.borderColor = u.accentColor || '#38452f';
+
+    if (u.avatarPhoto) {
+      $('vpAvatarPhoto').src = u.avatarPhoto;
+      $('vpAvatarPhoto').classList.remove('hidden');
+    } else {
+      $('vpAvatarPhoto').classList.add('hidden');
+    }
+
+    const followBtn = $('vpFollowBtn');
+    if (uid === currentUser.uid) {
+      followBtn.classList.add('hidden');
+    } else {
+      followBtn.classList.remove('hidden');
+      const isFollowing = (currentProfile.following || []).includes(uid);
+      followBtn.textContent = isFollowing ? 'Following' : 'Follow';
+      followBtn.classList.toggle('following', isFollowing);
+      followBtn.onclick = () => toggleFollow(uid, followBtn);
+    }
+
+    if (viewProfileUnsub) { viewProfileUnsub(); viewProfileUnsub = null; }
+    viewProfileUnsub = db.collection('posts').where('uid', '==', uid).orderBy('createdAt', 'desc').limit(50)
+      .onSnapshot(snap => {
+        const list = $('vpPostsList');
+        list.innerHTML = '';
+        if (snap.empty) { list.innerHTML = '<div class="empty">No posts yet.</div>'; return; }
+        snap.forEach(d => list.appendChild(renderPost(d.id, d.data())));
+      }, err => alert('Could not load posts: ' + err.message));
+  } catch (e) {
+    alert('Could not load profile: ' + e.message);
+  }
+}
+
+$('viewProfileBack').onclick = () => {
+  if (viewProfileUnsub) { viewProfileUnsub(); viewProfileUnsub = null; }
+  $('tab-viewprofile').classList.add('hidden');
+  document.querySelector('nav.tabs button[data-tab="feed"]').click();
+};
+
+/* ================= USERNAME SEARCH ================= */
+async function runUserSearch() {
+  const q = $('userSearchInput').value.trim().toLowerCase();
+  const results = $('userSearchResults');
+  if (!q) { results.innerHTML = ''; return; }
+  try {
+    const snap = await db.collection('users')
+      .orderBy('usernameLower')
+      .startAt(q)
+      .endAt(q + '\uf8ff')
+      .limit(20)
+      .get();
+    results.innerHTML = '';
+    if (snap.empty) { results.innerHTML = '<div class="empty">No users found.</div>'; return; }
+    snap.forEach(doc => {
+      const u = doc.data();
+      const item = document.createElement('div');
+      item.className = 'dm-list-item';
+      item.innerHTML = '<b>' + avatarMarkup(u) + ' @' + escapeHtml(u.username) + '</b>';
+      item.onclick = () => {
+        results.innerHTML = '';
+        $('userSearchInput').value = '';
+        openUserProfile(doc.id, u.username);
+      };
+      results.appendChild(item);
+    });
+  } catch (e) { alert('Search error: ' + e.message); }
+}
+
+$('userSearchBtn').onclick = runUserSearch;
+$('userSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') runUserSearch(); });
+
+/* ================= DMs (direct + group) ================= */
+function chatIdFor(uidA, uidB) {
+  return [uidA, uidB].sort().join('_');
+}
+
+$('dmFindBtn').onclick = async () => {
+  const uname = $('dmFindInput').value.trim().toLowerCase();
+  if (!uname) return;
+  try {
+    const q = await db.collection('users').where('usernameLower', '==', uname).get();
+    if (q.empty) { alert('No user with that username.'); return; }
+    const otherDoc = q.docs[0];
+    if (otherDoc.id === currentUser.uid) { alert("That's you!"); return; }
+    startOrOpenDirectChat(otherDoc.id, otherDoc.data().username);
+    $('dmFindInput').value = '';
+  } catch (e) { alert('Search error: ' + e.message); }
+};
+
+$('newGroupToggle').onclick = () => {
+  $('newGroupForm').classList.toggle('hidden');
+};
+
+$('createGroupBtn').onclick = async () => {
+  const groupName = $('groupNameInput').value.trim();
+  const usernamesRaw = $('groupUsernamesInput').value.trim();
+  if (!groupName) { alert('Give the group a name.'); return; }
+  if (!usernamesRaw) { alert('Add at least one username.'); return; }
+
+  const usernames = usernamesRaw.split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
+  try {
+    const lookups = await Promise.all(usernames.map(u => db.collection('users').where('usernameLower', '==', u).get()));
+    const participants = [currentUser.uid];
+    const participantNames = {};
+    participantNames[currentUser.uid] = currentProfile.username;
+    const notFound = [];
+
+    usernames.forEach((uname, i) => {
+      const snap = lookups[i];
+      if (snap.empty) { notFound.push(uname); return; }
+      const doc = snap.docs[0];
+      if (doc.id !== currentUser.uid && participants.indexOf(doc.id) === -1) {
+        participants.push(doc.id);
+        participantNames[doc.id] = doc.data().username;
+      }
+    });
+
+    if (notFound.length) { alert('Could not find: ' + notFound.join(', ')); }
+    if (participants.length < 2) { alert('Add at least one other valid username.'); return; }
+
+    const newDoc = await db.collection('chats').add({
+      participants: participants,
+      participantNames: participantNames,
+      isGroup: true,
+      groupName: groupName,
+      lastMessage: '',
+      lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    $('groupNameInput').value = '';
+    $('groupUsernamesInput').value = '';
+    $('newGroupForm').classList.add('hidden');
+    openThreadById(newDoc.id, groupName);
+  } catch (e) { alert('Could not create group: ' + e.message); }
+};
+
+function startDmList() {
+  if (dmListUnsub) return;
+  dmListUnsub = db.collection('chats').where('participants', 'array-contains', currentUser.uid)
+    .onSnapshot(snap => {
+      const list = $('dmListView');
+      list.innerHTML = '';
+      if (snap.empty) { list.innerHTML = '<div class="empty">No conversations yet.</div>'; return; }
+      snap.forEach(doc => {
+        const d = doc.data();
+        let displayName;
+        if (d.isGroup) {
+          displayName = '👥 ' + d.groupName;
+        } else {
+          const otherUid = d.participants.find(p => p !== currentUser.uid);
+          displayName = '@' + (d.participantNames ? d.participantNames[otherUid] : 'user');
+        }
+        const item = document.createElement('div');
+        item.className = 'dm-list-item';
+        item.innerHTML = '<b>' + escapeHtml(displayName) + '</b><span>' + escapeHtml(d.lastMessage || '') + '</span>';
+        item.onclick = () => openThreadById(doc.id, displayName);
+        list.appendChild(item);
+      });
+    }, err => alert('DM list error: ' + err.message));
+}
+
+function startOrOpenDirectChat(otherUid, otherName) {
+  const chatId = chatIdFor(currentUser.uid, otherUid);
+  const participantNames = {};
+  participantNames[currentUser.uid] = currentProfile.username;
+  participantNames[otherUid] = otherName;
+
+  db.collection('chats').doc(chatId).set({
+    participants: [currentUser.uid, otherUid],
+    participantNames: participantNames,
+    isGroup: false
+  }, { merge: true }).catch(e => alert('Could not open chat: ' + e.message));
+
+  openThreadById(chatId, '@' + otherName);
+}
+
+function openThreadById(chatId, displayName) {
+  activeChatId = chatId;
+  $('dmListView').classList.add('hidden');
+  $('dmThreadView').classList.remove('hidden');
+  $('dmThreadHeader').textContent = displayName;
+  $('dmInputBar').classList.remove('hidden');
+
+  if (dmThreadUnsub) dmThreadUnsub();
+  dmThreadUnsub = db.collection('chats').doc(chatId).collection('messages')
+    .orderBy('createdAt', 'asc').onSnapshot(snap => {
+      const thread = $('dmThread');
+      thread.innerHTML = '';
+      snap.forEach(doc => {
+        const d = doc.data();
+        const isMe = d.uid === currentUser.uid;
+        const bubble = document.createElement('div');
+        bubble.className = 'msg ' + (isMe ? 'me' : 'them');
+        if (isMe) bubble.style.background = d.accentColor || '#38452f';
+        bubble.innerHTML = (isMe ? '' : '<b style="display:block;font-family:var(--mono);font-size:10px;opacity:.7;margin-bottom:2px;">@' + escapeHtml(d.username || '') + '</b>') + escapeHtml(d.text);
+        thread.appendChild(bubble);
+      });
+      thread.scrollIntoView({ block: 'end' });
+    }, err => alert('Thread error: ' + err.message));
+}
+
+$('dmBack').onclick = () => {
+  $('dmThreadView').classList.add('hidden');
+  $('dmListView').classList.remove('hidden');
+  $('dmInputBar').classList.add('hidden');
+  if (dmThreadUnsub) { dmThreadUnsub(); dmThreadUnsub = null; }
+};
+
+$('dmSendBtn').onclick = sendDm;
+$('dmMsgInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendDm(); });
+
+async function sendDm() {
+  const text = $('dmMsgInput').value.trim();
+  if (!text || !activeChatId) return;
+  $('dmMsgInput').value = '';
+  try {
+    await db.collection('chats').doc(activeChatId).collection('messages').add({
+      text: text, uid: currentUser.uid, username: currentProfile.username,
+      accentColor: currentProfile.accentColor || '#38452f',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('chats').doc(activeChatId).update({
+      lastMessage: text, lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { alert('Could not send message: ' + e.message); }
+}
+</script>
+</body>
+</html>
